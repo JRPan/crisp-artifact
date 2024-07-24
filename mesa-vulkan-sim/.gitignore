@@ -1,0 +1,9 @@
+*.pyc
+*.pyo
+*.out
+build
+build-release
+.vscode
+lib
+gpgpusimShaders
+gpgpusimShaders copy

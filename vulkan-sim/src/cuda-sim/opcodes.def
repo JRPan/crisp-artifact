@@ -1,0 +1,198 @@
+// Copyright (c) 2009-2011, Tor M. Aamodt, Ali Bakhoda 
+// The University of British Columbia
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+// 
+// Redistributions of source code must retain the above copyright notice, this
+// list of conditions and the following disclaimer.
+// Redistributions in binary form must reproduce the above copyright notice, this
+// list of conditions and the following disclaimer in the documentation and/or
+// other materials provided with the distribution.
+// Neither the name of The University of British Columbia nor the names of its
+// contributors may be used to endorse or promote products derived from this
+// software without specific prior written permission.
+// 
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+/*6th operand of each OP_DEF  reflects its classification  */
+/*Type 
+ALU 1
+MAD 2
+Control 3
+SFU 4
+Mem(except Tex) 5
+Tex 6
+Nop 7
+Other 10
+*/
+OP_DEF(ABS_OP,abs_impl,"abs",1,1)
+OP_DEF(ADD_OP,add_impl,"add",1,1)
+OP_DEF(ADDP_OP,addp_impl,"addp",1,1)
+OP_DEF(ADDC_OP,addc_impl,"addc",1,1)
+OP_DEF(AND_OP,and_impl,"and",1,1)
+OP_DEF(ANDN_OP,andn_impl,"andn",1,1)
+OP_DEF(ATOM_OP,atom_impl,"atom",1,3)
+OP_DEF(BAR_OP,bar_impl,"bar",1,3)
+OP_DEF(BFE_OP,bfe_impl,"bfe",1,1)
+OP_DEF(BFI_OP,bfi_impl,"bfi",1,1)
+OP_DEF(BFIND_OP,bfind_impl,"bfind",1,1)
+OP_DEF(BRA_OP,bra_impl,"bra",0,3)
+OP_DEF(BRX_OP,brx_impl,"brx",0,3)
+OP_DEF(BREV_OP,brev_impl,"brev",1,1)
+OP_DEF(BRKPT_OP,brkpt_impl,"brkpt",1,9)
+OP_W_DEF(MMA_OP,mma_impl,"mma",1,1)
+OP_W_DEF(MMA_LD_OP,mma_ld_impl,"mma_load",1,5)
+OP_W_DEF(MMA_ST_OP,mma_st_impl,"mma_store",0,5)
+OP_DEF(CALL_OP,call_impl,"call",1,3)
+OP_DEF(CALLP_OP,callp_impl,"callp",1,3)
+OP_DEF(CLZ_OP,clz_impl,"clz",1,1)
+OP_DEF(CNOT_OP,cnot_impl,"cnot",1,1)
+OP_DEF(COS_OP,cos_impl,"cos",1,4)
+OP_DEF(CVT_OP,cvt_impl,"cvt",1,1)
+OP_DEF(CVTA_OP,cvta_impl,"cvta",1,1)
+OP_DEF(DIV_OP,div_impl,"div",1,1)
+OP_DEF(DP4A_OP,dp4a_impl,"dp4a",1,1)
+OP_DEF(EX2_OP,ex2_impl,"ex2",1,4)
+OP_DEF(EXIT_OP,exit_impl,"exit",1,3)
+OP_DEF(FMA_OP,fma_impl,"fma",1,2)
+OP_DEF(ISSPACEP_OP,isspacep_impl,"isspacep",1,1)
+OP_DEF(LD_OP,ld_impl,"ld",1,5)
+OP_DEF(LDU_OP,ldu_impl,"ldu",1,5)
+OP_DEF(LG2_OP,lg2_impl,"lg2",1,4)
+OP_DEF(MAD24_OP,mad24_impl,"mad24",1,2)
+OP_DEF(MAD_OP,mad_impl,"mad",1,2)
+OP_DEF(MADC_OP,madc_impl,"madc",1,2)
+OP_DEF(MADP_OP,madp_impl,"madp",1,2)
+OP_DEF(MAX_OP,max_impl,"max",1,1)
+OP_DEF(MEMBAR_OP,membar_impl,"membar",1,3)
+OP_DEF(MIN_OP,min_impl,"min",1,1)
+OP_DEF(MOV_OP,mov_impl,"mov",1,1)
+OP_DEF(MUL24_OP,mul24_impl,"mul24",1,1)
+OP_DEF(MUL_OP,mul_impl,"mul",1,1)
+OP_DEF(NEG_OP,neg_impl,"neg",1,1)
+OP_DEF(NANDN_OP,nandn_impl,"nandn",1,1)
+OP_DEF(NORN_OP,norn_impl,"norn",1,1)
+OP_DEF(NOT_OP,not_impl,"not",1,1)
+OP_DEF(OR_OP,or_impl,"or",1,1)
+OP_DEF(ORN_OP,orn_impl,"orn",1,1)
+OP_DEF(PMEVENT_OP,pmevent_impl,"pmevent",1,10)
+OP_DEF(POPC_OP,popc_impl,"popc",1,1)
+OP_DEF(PREFETCH_OP,prefetch_impl,"prefetch",1,5)
+OP_DEF(PREFETCHU_OP,prefetchu_impl,"prefetchu",1,5)
+OP_DEF(PRMT_OP,prmt_impl,"prmt",1,1)
+OP_DEF(RCP_OP,rcp_impl,"rcp",1,4)
+OP_DEF(RED_OP,red_impl,"red",1,7)
+OP_DEF(REM_OP,rem_impl,"rem",1,1)
+OP_DEF(RET_OP,ret_impl,"ret",0,3)
+OP_DEF(RETP_OP,retp_impl,"retp",0,3)
+OP_DEF(RSQRT_OP,rsqrt_impl,"rsqrt",1,4)
+OP_DEF(SAD_OP,sad_impl,"sad",1,1)
+OP_DEF(SELP_OP,selp_impl,"selp",1,1)
+OP_DEF(SETP_OP,setp_impl,"setp",1,1)
+OP_DEF(SET_OP,set_impl,"set",1,1)
+OP_W_DEF(SHFL_OP,shfl_impl,"shfl",1,10)
+OP_DEF(SHL_OP,shl_impl,"shl",1,1)
+OP_DEF(SHR_OP,shr_impl,"shr",1,1)
+OP_DEF(SIN_OP,sin_impl,"sin",1,4)
+OP_DEF(SLCT_OP,slct_impl,"slct",1,1)
+OP_DEF(SQRT_OP,sqrt_impl,"sqrt",1,4)
+OP_DEF(SST_OP,sst_impl,"sst",1,5)
+OP_DEF(SSY_OP,ssy_impl,"ssy",0,3)
+OP_DEF(ST_OP,st_impl,"st",0,5)
+OP_DEF(SUB_OP,sub_impl,"sub",1,1)
+OP_DEF(SUBC_OP,subc_impl,"subc",1,1)
+OP_DEF(SULD_OP,suld_impl,"suld",1,6)
+OP_DEF(SURED_OP,sured_impl,"sured",1,6)
+OP_DEF(SUST_OP,sust_impl,"sust",1,6)
+OP_DEF(SUQ_OP,suq_impl,"suq",1,6)
+OP_DEF(TEX_OP,tex_impl,"tex",1,6)
+OP_DEF(TRAP_OP,trap_impl,"trap",1,3)
+OP_DEF(VABSDIFF_OP,vabsdiff_impl,"vabsdiff",0,11)
+OP_DEF(VADD_OP,vadd_impl,"vadd",0,11)
+OP_DEF(VMAD_OP,vmad_impl,"vmad",0,11)
+OP_DEF(VMAX_OP,vmax_impl,"vmax",0,11)
+OP_DEF(VMIN_OP,vmin_impl,"vmin",0,11)
+OP_DEF(VSET_OP,vset_impl,"vset",0,11)
+OP_DEF(VSHL_OP,vshl_impl,"vshl",0,11)
+OP_DEF(VSHR_OP,vshr_impl,"vshr",0,11)
+OP_DEF(VSUB_OP,vsub_impl,"vsub",0,11)
+OP_DEF(VOTE_OP,vote_impl,"vote",0,3)
+OP_DEF(ACTIVEMASK_OP,activemask_impl,"activemask",1,3)
+OP_DEF(XOR_OP,xor_impl,"xor",1,1)
+OP_DEF(NOP_OP,nop_impl,"nop",0,7)
+OP_DEF(BREAK_OP,break_impl,"break",0,3)
+OP_DEF(BREAKADDR_OP,breakaddr_impl,"breakaddr",0,3)
+OP_DEF(LD_RAY_LAUNCH_ID_OP,load_ray_launch_id_impl,"load_ray_launch_id",0,1)
+
+// Ray tracing ops
+OP_DEF(TRACE_RAY_OP,trace_ray_impl,"trace_ray",0,12)
+OP_DEF(END_TRACE_RAY_OP,end_trace_ray_impl,"end_trace_ray",0,11)
+
+// Ray tracing setup ops
+OP_DEF(LD_RAY_LAUNCH_SIZE_OP,load_ray_launch_size_impl,"load_ray_launch_size",0,11)
+OP_DEF(LOAD_RAY_INSTANCE_CUSTOM_INDEX_OP,load_ray_instance_custom_index_impl,"load_ray_instance_custom_index",0,11)
+OP_DEF(LOAD_PRIMITIVE_ID_OP,load_primitive_id_impl,"load_primitive_id",0,11)
+OP_DEF(LOAD_RAY_WORLD_TO_OBJECT_OP,load_ray_world_to_object_impl,"load_ray_world_to_object",0,11)
+OP_DEF(LOAD_RAY_OBJECT_TO_WORLD_OP,load_ray_object_to_world_impl,"load_ray_object_to_world",0,11)
+OP_DEF(LOAD_RAY_WORLD_DIRECTION_OP,load_ray_world_direction_impl,"load_ray_world_direction",0,11)
+OP_DEF(LOAD_RAY_WORLD_ORIGIN_OP,load_ray_world_origin_impl,"load_ray_world_origin",0,11)
+OP_DEF(LOAD_RAY_T_MAX_OP,load_ray_t_max_impl,"load_ray_t_max",0,11)
+OP_DEF(LOAD_RAY_T_MIN_OP,load_ray_t_min_impl,"load_ray_t_min",0,11)
+OP_DEF(VK_RESOURCE_INDEX_OP,vulkan_resource_index_impl,"vulkan_resource_index",0,11)
+OP_DEF(LD_VK_DESC_OP,load_vulkan_descriptor_impl,"load_vulkan_descriptor",0,11)
+OP_DEF(DEREF_VAR_OP,deref_var_impl,"deref_var",0,11)
+OP_DEF(DEREF_CAST_OP,deref_cast_impl,"deref_cast",0,11)
+OP_DEF(DEREF_STRUCT_OP,deref_struct_impl,"deref_struct",0,11)
+OP_DEF(DEREF_ARRAY_OP,deref_array_impl,"deref_array",0,11)
+OP_DEF(LD_DEREF_OP,load_deref_impl,"load_deref",0,11)
+OP_DEF(IMG_DEREF_ST_OP,image_deref_store_impl,"image_deref_store",0,11)
+OP_DEF(IMG_DEREF_LD_OP,image_deref_load_impl,"image_deref_load",0,11)
+OP_DEF(ST_DEREF_OP,store_deref_impl,"store_deref",0,11)
+OP_DEF(RT_ALLOC_MEM_OP,rt_alloc_mem_impl,"rt_alloc_mem",0,11)
+OP_DEF(LOAD_FIRST_VERTEX_OP,load_first_vertex_impl,"load_first_vertex",0,5)
+OP_DEF(LOAD_VERTEX_ID_ZERO_BASE_OP, load_vertex_id_zero_base_impl,"load_vertex_id_zero_base", 0, 5)
+OP_DEF(LOAD_BASE_INSTANCE_OP, load_base_instance_impl,"load_base_instance", 0, 5)
+OP_DEF(LOAD_INSTANCE_ID_OP, load_instance_id_impl,"load_instance_id", 0, 5)
+OP_DEF(DISCARD_IF_OP, discard_if_impl,"discard_if", 0, 11)
+OP_DEF(FDDX_OP, fddx_impl,"fddx", 0, 4)
+OP_DEF(FDDY_OP, fddy_impl,"fddy", 0, 4)
+OP_DEF(EXTRACT_U8_OP, extract_u8_impl,"extract_u8", 0, 4)
+OP_DEF(LOAD_FRAG_COORD_OP, load_frag_coord_impl,"load_frag_coord", 0, 5)
+OP_DEF(LOAD_FRONT_FACE_OP, load_front_face_impl,"load_front_face", 0, 5)
+OP_DEF(TXL_OP,txl_impl,"txl",0,6)
+OP_DEF(TXS_OP, txs_impl,"txs", 0, 11)
+OP_DEF(WRAP_32_4_OP,wrap_32_4_impl,"wrap_32_4",0,11)
+OP_DEF(UNWRAP_32_4_OP,unwrap_32_4_impl,"unwrap_32_4",0,11)
+OP_DEF(GET_ELEMENT_32_OP,get_element_32_impl,"get_element_32",0,11)
+OP_DEF(SET_ELEMENT_32_OP,set_element_32_impl,"set_element_32",0,11)
+OP_DEF(SHADER_CLOCK_OP,shader_clock_impl,"shader_clock",0,11)
+OP_DEF(COPYSIGNF_OP,copysignf_impl,"copysignf",0,11)
+OP_DEF(REPORT_RAY_INTERSECTION_OP,report_ray_intersection_impl,"report_ray_intersection",0,11)
+OP_DEF(RUN_INTERSECTION_OP,run_intersection_impl,"run_intersection",0,11)
+OP_DEF(GET_INTERSECTION_INDEX_OP,get_intersection_index_impl,"get_intersection_index",0,11)
+OP_DEF(INTERSECTION_EXIT_OP,intersection_exit_impl,"intersection_exit",0,11)
+OP_DEF(HIT_GEOMETRY_OP,hit_geometry_impl,"hit_geometry",0,11)
+OP_DEF(GET_HITGROUP_OP,get_hitgroup_impl,"get_hitgroup",0,11)
+OP_DEF(GET_WARP_HITGROUP_OP,get_warp_hitgroup_impl,"get_warp_hitgroup",0,11)
+OP_DEF(GET_CLOSEST_HIT_SHADERID_OP,get_closest_hit_shaderID_impl,"get_closest_hit_shaderID",0,11)
+OP_DEF(GET_INTERSECTION_SHADERID_OP,get_intersection_shaderID_impl,"get_intersection_shaderID",0,11)
+OP_DEF(GET_INTERSECTION_SHADER_DATE_ADDRESS_OP,get_intersection_shader_data_address_impl,"get_intersection_shader_data_address",0,11)
+
+// Shader calls
+OP_DEF(CALL_MISS_SHADER_OP,call_miss_shader_impl,"call_miss_shader",0,13)
+OP_DEF(CALL_CLOSEST_HIT_SHADER_OP,call_closest_hit_shader_impl,"call_closest_hit_shader",0,13)
+OP_DEF(CALL_INTERSECTION_SHADER_OP,call_intersection_shader_impl,"call_intersection_shader",0,13)
+OP_DEF(CALL_ANY_HIT_SHADER_OP,call_any_hit_shader_impl,"call_any_hit_shader",0,13)
+
