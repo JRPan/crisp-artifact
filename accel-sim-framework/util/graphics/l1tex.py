@@ -123,7 +123,7 @@ def plot(hw, sim, hw_col, sim_col, title):
     if "rate" in title:
         fig.update_xaxes(type="linear")
         fig.update_yaxes(type="linear")
-    fig.show()
+    # fig.show()
     return fig
 
 
@@ -400,6 +400,7 @@ sets = ['']
 
 sim_path = './'
 drawcall = 0
+global_id = 0
 sim = pd.DataFrame(columns=[
     'app', 'label', 'config',
     'drawcall', 'l1_tex_access', 'l1_tex_hit', 'l1_global_access','cycle', 'vs', 'fs', 'l2_tex_read', 'l2_tex_hit', 'tot_cycle'])
@@ -411,6 +412,7 @@ for dataset in sets:
         "render_passes_2k_lod0"
          ]:
         count = 0
+        drawcall_map = {}
         print(sim_path + dataset + wl + ".csv")
         (
             all_named_kernels,
@@ -429,8 +431,17 @@ for dataset in sets:
                 if config != 'RTX3070-SASS-concurrent-fg-VISUAL':
                     continue
                 for kernel in all_named_kernels[app]:
+                    id = kernel.split('-')[-1]
                     if "VERTEX" in kernel:
-                        drawcall += 1
+                        drawcall_map[kernel] = int(id) // 2 
+                        # global_id += 1
+                        drawcall = drawcall_map[kernel]
+                    else:
+                        vertex_name = "MESA_SHADER_VERTEX_func0_main-" + str(int(id) - 1)
+                        drawcall = drawcall_map[vertex_name]
+                    if ('lod0' in wl):
+                        drawcall += 24
+                    # print(kernel, drawcall)
                     kernel_index = int(kernel.split('-')[-1]) - 1
                     if (wl == 'pbrtexture_2k'):
                         if(kernel_index >= 2):
@@ -480,7 +491,8 @@ for dataset in sets:
                         #     'app': app,'drawcall': drawcall, 'l1_tex_access': 0, 'l1_tex_hit': 0, 
                         #     'l1_global_access': 0, 'cycle': 0, 'l2_tex_read': 0, 'l2_tex_hit': 0
                         #     }, ignore_index=True)
-                        sim = sim.append(pd.Series(0, index=sim.columns), ignore_index=True)
+                        new_row = pd.DataFrame([pd.Series(0, index=sim.columns)])
+                        sim = pd.concat([sim, new_row], ignore_index=True)
                         sim.iloc[-1, sim.columns.get_loc('app')] = name
                         sim.iloc[-1, sim.columns.get_loc('label')] = label
                         sim.iloc[-1, sim.columns.get_loc('drawcall')] = drawcall
@@ -511,7 +523,10 @@ for dataset in sets:
         if hw is None:
             hw = hw_prof
         else:
-            hw = hw.append(hw_prof, ignore_index=True)      
+            hw = pd.concat([hw, hw_prof], ignore_index=True)    
+
+# sort sim based on drawcall
+sim = sim.sort_values(by=['drawcall'])
 
 sim = sim.fillna(0)
 sim['l1_tex_hitrate'] = sim['l1_tex_hit'] / sim['l1_tex_access']
