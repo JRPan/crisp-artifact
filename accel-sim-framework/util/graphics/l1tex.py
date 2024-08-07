@@ -26,7 +26,8 @@ def plot(hw, sim, hw_col, sim_col, title):
         for i in range(len(hw_copy)):
             if hw_copy.iloc[i] == 0:
                 hw_copy.iloc[i] = sim[sim['label'] == app][sim_col].iloc[i]
-        mae = np.mean(np.abs((hw[hw['label'] == app][hw_col] - sim[sim['label'] == app][sim_col]) / hw_copy)) * 100
+        mae = np.mean(np.abs((hw[hw['label'] == app][hw_col] - sim[sim['label'] == app]
+        [sim_col]) / hw_copy)) * 100
         # moe_annote.append("{0}: Correl={1:.4f} MAE={2:.4f}".format(app, correl_co, mae))
         # annot = "{0}: Corr={1:.2f}%".format(app, correl_co * 100)
         annot = "{0}: MAPE={1:.2f}%".format(app, mae)
@@ -441,6 +442,8 @@ for dataset in sets:
                         drawcall = drawcall_map[vertex_name]
                     if ('lod0' in wl):
                         drawcall += 24
+                    if (drawcall == 48):
+                        continue
                     # print(kernel, drawcall)
                     kernel_index = int(kernel.split('-')[-1]) - 1
                     if (wl == 'pbrtexture_2k'):
@@ -525,8 +528,8 @@ for dataset in sets:
         else:
             hw = pd.concat([hw, hw_prof], ignore_index=True)    
 
-# sort sim based on drawcall
-sim = sim.sort_values(by=['drawcall'])
+# sort sim based on drawcall and reset index
+sim = sim.sort_values(by=['drawcall']).reset_index(drop=True)
 
 sim = sim.fillna(0)
 sim['l1_tex_hitrate'] = sim['l1_tex_hit'] / sim['l1_tex_access']
