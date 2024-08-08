@@ -32,7 +32,9 @@ while file:
         cycle = int(dataPart)
         # if (cycle == 500):
             # array = array[0:0]
-        array = array.append(pd.Series(0, index=array.columns), ignore_index=True)
+        # array = array.append(pd.Series(0, index=array.columns), ignore_index=True)
+        array = pd.DataFrame([pd.Series(0, index=array.columns)])
+        array = pd.concat([array, new_row], ignore_index=True)
         array.iloc[-1]['globalcyclecount'] = cycle
         array.iloc[-1]['cycle_counter'] = 500 * (array.shape[0] - 1)
         

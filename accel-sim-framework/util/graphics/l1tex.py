@@ -401,7 +401,7 @@ sets = ['']
 
 sim_path = './'
 drawcall = 0
-global_id = 0
+start_point = 0
 sim = pd.DataFrame(columns=[
     'app', 'label', 'config',
     'drawcall', 'l1_tex_access', 'l1_tex_hit', 'l1_global_access','cycle', 'vs', 'fs', 'l2_tex_read', 'l2_tex_hit', 'tot_cycle'])
@@ -434,17 +434,10 @@ for dataset in sets:
                 for kernel in all_named_kernels[app]:
                     id = kernel.split('-')[-1]
                     if "VERTEX" in kernel:
-                        drawcall_map[kernel] = int(id) // 2 
-                        # global_id += 1
-                        drawcall = drawcall_map[kernel]
+                        drawcall = int(id) + start_point
                     else:
-                        vertex_name = "MESA_SHADER_VERTEX_func0_main-" + str(int(id) - 1)
-                        drawcall = drawcall_map[vertex_name]
-                    if ('lod0' in wl):
-                        drawcall += 24
-                    if (drawcall == 48):
-                        continue
-                    # print(kernel, drawcall)
+                        drawcall = int(id) + start_point - 1
+                    print(kernel, drawcall)
                     kernel_index = int(kernel.split('-')[-1]) - 1
                     if (wl == 'pbrtexture_2k'):
                         if(kernel_index >= 2):
@@ -509,6 +502,7 @@ for dataset in sets:
                     sim.loc[sim['drawcall'] == drawcall, 'l2_tex_read'] += int(l2_tex_read)
                     sim.loc[sim['drawcall'] == drawcall, 'l2_tex_hit'] += int(l2_tex_hit)
                     sim.loc[sim['drawcall'] == drawcall, 'tot_cycle'] = max(int(tot_cycle), sim.loc[sim['drawcall'] == drawcall, 'tot_cycle'].values[0]) 
+            start_point = sim.shape[0] * 2
         hw_prof = pd.read_csv('./hw_run/renderdoc_profiling/{0}.csv'.format(wl.replace("_lod0", "")).replace("4k", "2k"))
         if('sponza_2k' in wl):
             hw_prof = hw_prof.iloc[391:]

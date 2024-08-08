@@ -1,5 +1,10 @@
-pyyaml
-pandas
-plotly
-kaleido
-psutil
+kaleido==0.2.1
+numpy==1.24.4
+packaging==24.1
+pandas==2.0.3
+plotly==5.23.0
+python-dateutil==2.9.0.post0
+pytz==2024.1
+six==1.16.0
+tenacity==9.0.0
+tzdata==2024.1
