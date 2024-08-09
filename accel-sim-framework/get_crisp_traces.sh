@@ -1,5 +1,5 @@
 mkdir -p hw_run/traces/vulkan
-wget http://tgrogers-pc02.ecn.purdue.edu/crisp/spl_vio.tar.gz
+curl https://zenodo.org/records/13279109/files/spl_vio.tar.gz?download=1 --output spl_vio.tar.gz
 tar -xvf spl_vio.tar.gz
 mv spl_vio/* hw_run/traces/vulkan
 rm -rf spl_vio
