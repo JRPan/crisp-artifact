@@ -1,4 +1,4 @@
-# CRISP Artifacts
+# Artifacts for CRISP: Concurrent Rendering and Compute Simulation Platform for GPUs
 
 ### Software dependencies
 
