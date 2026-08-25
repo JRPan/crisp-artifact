@@ -1,3 +1,0 @@
-EXPORTS
-    spirv_to_dxil
-    spirv_to_dxil_free

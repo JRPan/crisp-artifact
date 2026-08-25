@@ -1,0 +1,8 @@
+[submodule "vulkan-sim"]
+	path = vulkan-sim
+	url = https://github.com/JRPan/vulkan-sim.git
+	branch = dev-2.0
+[submodule "mesa-vulkan-sim"]
+	path = mesa-vulkan-sim
+	url = https://github.com/JRPan/mesa-vulkan-sim.git
+	branch = dev-2.0

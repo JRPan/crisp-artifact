@@ -1,68 +1,95 @@
-# NOTE - Update Dec 2024:
+# CRISP Artifact — Vulkan-Sim 2.0 Branch
 
-- I'm working on merging into Accel-Sim and potentially Vulkan-Sim.
-- I'm updating CRISP to include Vulkan-Sim 2.0, which uses Lavapipe and no longer requires an Intel CPU. However, it may take longer than expected.
-  - The new translator also solves some limitations I had, so hopefully we can support even more workloads!
-- If you want to use the model and need help, please file an issue without hesitation.
+> **This branch (`2.0`) tracks ongoing work to port CRISP onto Vulkan-Sim 2.0.**
+> For the exact code used in the paper, see the [`main`](https://github.com/JRPan/crisp-artifact/tree/main) branch (aging, minimal support) or the pinned Zenodo release. If you need the original artifact and can't reproduce from `main`, please open an issue and I can help.
+
+## Update — August 2026
+
+- Migrated `vulkan-sim` and `mesa-vulkan-sim` to git submodules pointing at [`dev-2.0`](https://github.com/JRPan/vulkan-sim/tree/dev-2.0) and [`dev-2.0`](https://github.com/JRPan/mesa-vulkan-sim/tree/dev-2.0). `accel-sim-framework` is unchanged in this repo.
+- Vulkan-Sim 2.0 uses **Lavapipe** as the driver — no Intel CPU required.
+- [Vulkan-Samples](https://github.com/KhronosGroup/Vulkan-Samples) is now the primary workload driver. Working samples so far: **sponza**, **instancing**, **PBR** (more being validated).
+- The new NIR→PTX translator resolves several limitations of the paper version, so more workloads should be reachable going forward.
+- Not everything is ported yet. If you hit issues, please file an issue.
+
+---
 
 # Artifacts for CRISP: Concurrent Rendering and Compute Simulation Platform for GPUs
 
+### Repository layout
+
+- `accel-sim-framework/` — the simulator (checked in, unchanged).
+- `vulkan-sim/` — **git submodule**, tracks `dev-2.0` of [JRPan/vulkan-sim](https://github.com/JRPan/vulkan-sim/tree/dev-2.0).
+- `mesa-vulkan-sim/` — **git submodule**, tracks `dev-2.0` of [JRPan/mesa-vulkan-sim](https://github.com/JRPan/mesa-vulkan-sim/tree/dev-2.0).
+- `embree-3.13.5.x86_64.linux/` — Embree binary distribution.
+- `gpgpusim.config`, `config_turing_islip.icnt` — simulator configs.
+
 ### Software dependencies
 
-The framework is tested on Ubuntu 20.04. The host computer should have Docker installed. CUDA is required to run the tracer.
+Tested on Ubuntu 20.04 / 22.04. Docker is required for the simulator build; CUDA is required for tracing.
 
 - gcc/g++-9
 - CUDA-11 (11.4 tested)
-- Embree v3.12.0
-- Vulkan SDK 1.2.162 or preferably newer
+- Embree v3.13.5 (included)
+- Vulkan SDK 1.2.162 or newer
 - Docker
-- [Vulkan Samples](https://github.com/KhronosGroup/Vulkan-Samples)
+- [Vulkan-Samples](https://github.com/KhronosGroup/Vulkan-Samples)
 
-For Vulkan Samples, you can check out an earlier commit if you are experiencing CMake version issues. We used commit `2ce8856`.
+### Cloning
 
-### Data sets
+Clone recursively so the submodules come with you:
 
-All traces evaluated in the paper are provided. However, by default, only SPL paired with VIO is downloaded. If the user wishes to evaluate all workloads used in the paper, please follow the instructions accordingly.
+```bash
+$ git clone --recurse-submodules -b 2.0 https://github.com/JRPan/crisp-artifact.git
+$ cd crisp-artifact
+```
+
+If you already cloned without `--recurse-submodules`:
+
+```bash
+$ git submodule update --init --recursive
+```
+
+To pull the latest changes on both submodule branches:
+
+```bash
+$ git submodule update --remote
+```
 
 ### Installation
 
-After all software dependencies are met, please run the following to install the remaining dependencies:
+Install system packages:
 
 ```bash
 $ sudo apt install -y build-essential git ninja-build meson libboost-all-dev xutils-dev bison zlib1g-dev flex libglu1-mesa-dev libxi-dev libxmu-dev libdrm-dev llvm libelf-dev libwayland-dev wayland-protocols libwayland-egl-backend-dev libxcb-glx0-dev libxcb-shm0-dev libx11-xcb-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxshmfence-dev libxxf86vm-dev libxrandr-dev libglm-dev libelf-dev
 ```
 
-~~Download and decompress the source codes: [https://zenodo.org/records/12803388](https://zenodo.org/records/12803388)~~
-Use this repo. This repo has latest changes. Various bug fix etc. You can checkout zenodo for the exact version that was used in the paper. But no support is provided.
-
-The source code contains 3 folders:
-
-- **accel-sim-framework:** the simulator.
-- **vulkan-sim:** the tracer.
-- **mesa-vulkan-sim:** the Mesa 3D driver.
-
-Next, set up environments:
+Set up the environment:
 
 ```bash
 $ export CUDA_INSTALL_PATH=/usr/local/cuda
-$ cd crisp-framework
 $ source vulkan-sim/setup_environment
 ```
 
-Build the tracer. Please ignore the error in the first ninja build:
+Build order matters — **build `vulkan-sim` first, then Mesa** (Mesa links against symbols from vulkan-sim):
 
 ```bash
 $ cd mesa-vulkan-sim
 $ meson --prefix="${PWD}/lib" build/
 $ meson configure build/ -Dbuildtype=debug -D b_lundef=false
-$ ninja -C build/ install
+$ ninja -C build/ install   # first pass may error; that's expected
 $ cd ../vulkan-sim/
-$ make -j
+$ make -j$(nproc)
 $ cd ../mesa-vulkan-sim
 $ ninja -C build/ install
 ```
 
-Build the Simulator within the Docker (from the crisp-framework folder):
+Register the Lavapipe ICD so applications load the vulkan-sim driver:
+
+```bash
+$ export VK_ICD_FILENAMES=$PWD/lib/share/vulkan/icd.d/lvp_icd.x86_64.json
+```
+
+Build the simulator inside Docker:
 
 ```bash
 $ docker run -it --rm -v $(pwd)/accel-sim-framework:/accel-sim/accel-sim-framework tgrogers/accel-sim_regress:Ubuntu-22.04-cuda-11.7
@@ -72,11 +99,21 @@ $ make -j -C ./gpu-simulator
 $ exit
 ```
 
-Finally, copy files `gpgpusim.config` and `config_turing_islip.icnt` from the crisp-framework folder to the Vulkan-Samples folder.
+Copy `gpgpusim.config` and `config_turing_islip.icnt` from this folder into the Vulkan-Samples build folder before running.
 
-### Experiment workflow
+### Running Vulkan-Samples
 
-To run the simulation:
+Working samples on `dev-2.0` as of this update: `sponza`, `instancing`, `PBR`.
+
+```bash
+$ VULKAN_APP=instancing ./build/linux/app/bin/Release/x86_64/vulkan_samples sample instancing
+```
+
+The tracer writes `complete.traceg` in the working directory when the sample exits.
+
+### Experiment workflow (paper reproduction)
+
+The scripts below reproduce the paper experiments using the traces from the original artifact. Trace collection with 2.0 is still being validated across all paper workloads.
 
 ```bash
 $ docker run -it --rm -v $(pwd)/accel-sim-framework:/accel-sim/accel-sim-framework tgrogers/accel-sim_regress:Ubuntu-22.04-cuda-11.7
@@ -88,53 +125,53 @@ $ cd ../../
 $ . run.sh
 ```
 
-The user can use `./util/job_launching/job_status.py` to monitor the simulation. The simulations are expected to run for 8 hours. After simulations are finished, the results are included in the folder `sim_run_11.7`.
+Monitor with `./util/job_launching/job_status.py`. Expect ~8 hours. Results land in `sim_run_11.7`.
 
-To collect the stats, simply run the following command and then exit the Docker image:
+Collect stats and exit the container:
 
 ```bash
 $ . collect.sh
 $ exit
 ```
 
-Several CSV files should be generated under the accel-sim-framework folder. These files contain simulation statistics such as execution cycles and cache hit rates.
+### Collecting your own traces
 
-(optional) To collect traces, execute the command from the Vulkan-Sample folder:
+From the Vulkan-Samples folder:
 
 ```bash
 $ VULKAN_APP=render_passes ./build/linux/app/bin/Release/x86_64/vulkan_samples sample render_passes
 ```
 
-Then wait for the tracer to finish. The resolution has been changed to 480P to speed up the process. After the process is finished, a file called `complete.traceg` should be generated in the working directory.
-
-Then, from the `accel-sim-framework/util/graphics` folder, edit line 7 to the `compelete.g` file, and optionally edit line 4 to change the output folder name.
+Resolution is set to 480P for speed. Once `complete.traceg` is produced, from `accel-sim-framework/util/graphics/`, edit line 7 to point at the trace and (optionally) line 4 to set the output folder, then:
 
 ```bash
 $ python3 ./process-vulkan-traces.py
 ```
 
-### Evaluation and expected results
+### Evaluation
 
-The CSV files generated in the previous section contain all data used in this paper. The following scripts are used to generate figures in Section \ref{methodology}.
+The scripts below reproduce paper figures from the collected CSVs (`render_passes_2k.csv`, `render_passes_2k_lod0.csv`).
 
-After completing the previous step, you should have the following CSV files under `accel-sim-framework`: `render_passes_2k.csv` and `render_passes_2k_lod0.csv`.
-
-To generate the L1 texture plot similar to Figure L1 TEX Loads:
+L1 texture plot (Figure "L1 TEX Loads"):
 
 ```bash
 $ python3 ./util/graphics/l1tex.py
 ```
 
-To generate the L2 breakdown plot similar to Figure L2 breakdown, change `./util/graphics/l2breakdown.py::7` to match the visualizer log file. The log files are generated under `sim_run*` folders.
+L2 breakdown (Figure "L2 breakdown") — update `l2breakdown.py::7` to match the visualizer log under `sim_run*`:
 
 ```bash
 $ python3 ./util/graphics/l2breakdown.py
 ```
 
-To generate the concurrent ratio plot similar to Figure slicer occupancy, change `./util/graphics/concurrent_ratio.py::7` to match the visualizer log. For this one, please choose the one under `sim_run_11.7/render_passes_2k/all1/RTX3070-SASS-concurrent-fg-VISUAL`.
+Slicer occupancy (Figure "slicer occupancy") — update `concurrent_ratio.py::7` to `sim_run_11.7/render_passes_2k/all1/RTX3070-SASS-concurrent-fg-VISUAL`:
 
 ```bash
 $ python3 ./util/graphics/concurrent_ratio.py
 ```
 
-We provided a `.ipynb` notebook `util/graphics/working_set.ipynb` to perform static analysis as seen in Figure TEX working set.
+Static TEX working-set analysis (Figure "TEX working set") is in `util/graphics/working_set.ipynb`.
+
+### Want the original paper artifact?
+
+The exact snapshot used for the CRISP paper lives on the [`main`](https://github.com/JRPan/crisp-artifact/tree/main) branch and on [Zenodo](https://zenodo.org/records/12803388). Both are aging and largely unsupported — if you need help getting that version running, please open an issue and I'll do what I can.
