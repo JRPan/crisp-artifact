@@ -1,0 +1,12 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+%files
+    packages.txt /opt/packages.txt
+    install_packages.sh /opt/install_packages.sh
+
+%post
+    /opt/install_packages.sh /opt/packages.txt && rm /opt/packages.txt /opt/install_packages.sh
+
+%environment
+    export LLVM_INCLUDE=/usr/lib/llvm-14/include

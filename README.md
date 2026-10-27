@@ -1,15 +1,98 @@
-# CRISP Artifact — Vulkan-Sim 2.0 Branch
+<h1 align="center">CRISP Artifact — Vulkan-Sim 2.0</h1>
+
+<p align="center">
+  <b>Cycle-level GPU simulation of real Vulkan rendering, verified pixel-for-pixel against Mesa's software renderer.</b><br/>
+  <a href="https://github.com/JRPan/vulkan-sim/tree/dev-2.0"><img alt="vulkan-sim" src="https://img.shields.io/badge/vulkan--sim-dev--2.0-blue"></a>
+  <a href="https://github.com/JRPan/mesa-vulkan-sim/tree/dev-2.0"><img alt="mesa-vulkan-sim" src="https://img.shields.io/badge/mesa--vulkan--sim-dev--2.0-blue"></a>
+  <img alt="driver" src="https://img.shields.io/badge/driver-lavapipe%20%2F%20llvmpipe-orange">
+  <img alt="verification" src="https://img.shields.io/badge/verified%20vs%20llvmpipe-bit--exact-brightgreen">
+  <img alt="host" src="https://img.shields.io/badge/build-Ubuntu%2024.04%20container-lightgrey">
+</p>
 
 > **This branch (`2.0`) tracks ongoing work to port CRISP onto Vulkan-Sim 2.0.**
 > For the exact code used in the paper, see the [`main`](https://github.com/JRPan/crisp-artifact/tree/main) branch (aging, minimal support) or the pinned Zenodo release. If you need the original artifact and can't reproduce from `main`, please open an issue and I can help.
 
-## Update — August 2026
+## Gallery: rendered by Vulkan-Sim
 
-- Migrated `vulkan-sim` and `mesa-vulkan-sim` to git submodules pointing at [`dev-2.0`](https://github.com/JRPan/vulkan-sim/tree/dev-2.0) and [`dev-2.0`](https://github.com/JRPan/mesa-vulkan-sim/tree/dev-2.0). `accel-sim-framework` is unchanged in this repo.
-- Vulkan-Sim 2.0 uses **Lavapipe** as the driver — no Intel CPU required.
-- [Vulkan-Samples](https://github.com/KhronosGroup/Vulkan-Samples) is now the primary workload driver. Working samples so far: **sponza**, **instancing**, **PBR** (more being validated).
-- The new NIR→PTX translator resolves several limitations of the paper version, so more workloads should be reachable going forward.
-- Not everything is ported yet. If you hit issues, please file an issue.
+Every frame below is the output of vulkan-sim's simulated vertex and pixel shaders. Each draw was checked against
+llvmpipe (Mesa's CPU Vulkan renderer) rendering the same draw.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/sponza_2k.jpg" alt="Sponza, 2560x1440"/><br/>
+      <b>① Sponza</b> — Vulkan-Samples <code>render_passes</code><br/>
+      2560×1440 · 25 draws · <b>100% bit-exact</b> on every draw
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/instancing_2k.jpg" alt="Instancing, 2560x1440"/><br/>
+      <b>② Asteroid field</b> — Vulkan-Samples <code>instancing</code><br/>
+      2560×1440 · 4,096 instanced rocks + planet + starfield · <b>100% bit-exact</b><br/>
+      1.68 M vertex-shader invocations, all outputs 0 ULP
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/images/pbrtexture_2k.jpg" alt="PBR texture, 2560x1440"/><br/>
+      <b>③ Textured PBR</b> — Sascha Willems <code>pbrtexture</code><br/>
+      2560×1440 · cube-map skybox + PBR model with IBL<br/>
+      99.997% bit-exact, max diff 37 LSB on 0.003% of pixels (llvmpipe cube-seam artifact ⁽¹⁾)
+    </td>
+    <td align="center">
+      <img src="docs/images/sponza_crop_llvmpipe_vs_vulkansim.jpg" alt="Sponza crop, llvmpipe vs vulkan-sim"/><br/>
+      <b>④ Side by side</b> — Sponza crop at native resolution<br/>
+      left: llvmpipe (golden) · right: vulkan-sim · identical bytes<br/><br/>
+      <img src="docs/images/godot_sponza_composite_64px.png" alt="Godot composite pass" width="360"/><br/>
+      <b>⑤ Godot 4 engine</b> — <code>sponza</code> export, frame 10, final composite pass (64×64, upscaled)<br/>
+      left: llvmpipe · right: vulkan-sim · alpha-blended, bit-exact
+    </td>
+  </tr>
+</table>
+
+<sub>⁽¹⁾ llvmpipe shades two 2×2 quads per 8-wide SIMD vector, and its cube-map path lets the second quad depend on the
+first. That produces faint seams in llvmpipe's <i>own</i> image (the thin vertical line in ③ is in the golden image too).
+vulkan-sim samples each quad independently, as hardware does, so those few pixels differ by design.</sub>
+
+## What renders today
+
+| Workload | Source | Result vs llvmpipe |
+|---|---|---|
+| `render_passes` (Sponza) | Vulkan-Samples | ✅ bit-exact, all 25 draws at 2560×1440 |
+| `instancing` | Vulkan-Samples | ✅ bit-exact at 2560×1440, 4,096 instances (first frame) |
+| `texture_mipmap_generation` | Vulkan-Samples | ✅ bit-exact (trilinear, mipmaps) |
+| `dynamic_uniform_buffers` | Vulkan-Samples | ✅ bit-exact |
+| `hlsl_shaders` | Vulkan-Samples | ✅ bit-exact |
+| `hello_triangle`, `separate_image_sampler` | Vulkan-Samples | ✅ bit-exact |
+| `texture_loading` | Vulkan-Samples | 🟡 99.81%: llvmpipe quad-coupling with a per-fragment LoD bias ⁽¹⁾ |
+| `pbrtexture` | Sascha Willems | 🟡 99.997%: cube-seam artifact ⁽¹⁾; render-to-texture precompute runs on llvmpipe |
+| Godot 4 `sponza`, `demo`, `material`, `platformer` | Godot exports | 🟡 final composite pass bit-exact; 3D scene passes are render-to-texture (not yet simulated) |
+| `hdr` | Vulkan-Samples | ❌ needs float render targets |
+
+**What is simulated:**
+- **Shaders:** vertex and pixel shaders, compiled NIR → PTX by a native C emitter (`nir_to_ptx.c`).
+- **Rasterization:** llvmpipe's own, with whole 2×2 quads and helper lanes.
+- **Texture sampling:** llvmpipe's JIT'd sampler, so filtering, LoD, mip selection and wrap modes match. The texel
+  addresses it chooses drive vulkan-sim's texture-cache timing.
+- **Blending:** llvmpipe's blend stage, functional only (no ROP timing yet). Includes color masks and logic ops.
+- **Draw state:** depth test, sRGB/UNORM targets and instancing.
+
+**Not yet:**
+- render-to-texture of a different size than the swapchain (skipped with `GPGPUSIM_SKIP_RTT=1`);
+- float or multiple render targets;
+- `discard` combined with depth writes;
+- ROP/blend timing;
+- moving the ray-tracing shader path off the legacy Python lowering.
+
+### How correctness is checked
+
+`GPGPUSIM_VERIFY=1` runs every draw twice in one pass:
+1. **Golden:** llvmpipe renders the draw as usual.
+2. **Simulated:** vulkan-sim renders the same draw from the same pre-draw framebuffer and depth.
+3. **Compare:** the two are compared in the stored format. The run writes `verify.csv` (exact %, max LSB, PSNR,
+   coverage, depth) and `verify_vs.csv` (vertex-shader outputs, in ULP), plus golden / sim / diff images per draw.
+
+With `GPGPUSIM_FRAG_FEED=1`, llvmpipe's rasterized fragments feed vulkan-sim's pixel shader. The vertex shader and
+pixel shader are then each checked on exact inputs.
 
 ---
 
@@ -22,74 +105,42 @@
 - `mesa-vulkan-sim/` — **git submodule**, tracks `dev-2.0` of [JRPan/mesa-vulkan-sim](https://github.com/JRPan/mesa-vulkan-sim/tree/dev-2.0).
 - `embree-3.13.5.x86_64.linux/` — Embree binary distribution.
 - `gpgpusim.config`, `config_turing_islip.icnt` — simulator configs.
+- `container/` — Ubuntu 24.04 Dockerfile / Apptainer recipe (shared `packages.txt`).
+- `docs/images/` — the gallery above.
 
-### Software dependencies
+### Building (Ubuntu 24.04 container)
 
-Tested on Ubuntu 20.04 / 22.04. Docker is required for the simulator build; CUDA is required for tracing.
-
-- gcc/g++-9
-- CUDA-11 (11.4 tested)
-- Embree v3.13.5 (included)
-- Vulkan SDK 1.2.162 or newer
-- Docker
-- [Vulkan-Samples](https://github.com/KhronosGroup/Vulkan-Samples)
-
-### Cloning
-
-Clone recursively so the submodules come with you:
+Everything builds and runs inside an Ubuntu 24.04 image. The package list is `container/packages.txt`, and the Docker
+and Apptainer recipes both read it. You also need CUDA 11.x on the host, for `ptxas`.
 
 ```bash
-$ git clone --recurse-submodules -b 2.0 https://github.com/JRPan/crisp-artifact.git
-$ cd crisp-artifact
+$ git clone --recurse-submodules -b 2.0 https://github.com/JRPan/crisp-artifact.git && cd crisp-artifact
+$ git submodule update --remote          # optional: move to the newest dev-2.0 commits
+
+# Docker
+$ docker build -t vulkan-sim-2404 container/
+$ docker run -it --rm -v $PWD:$PWD -w $PWD vulkan-sim-2404 bash
+# ...or Apptainer
+$ apptainer build --fakeroot vulkan-sim-2404.sif container/vulkan-sim-2404.def
+$ apptainer shell --bind $PWD vulkan-sim-2404.sif
 ```
 
-If you already cloned without `--recurse-submodules`:
+Inside the container:
 
 ```bash
-$ git submodule update --init --recursive
+$ export CUDA_INSTALL_PATH=/path/to/cuda-11.7
+$ source embree-3.13.5.x86_64.linux/embree-vars.sh
+$ source vulkan-sim/setup_environment debug          # or: release
+# Mesa and vulkan-sim link against each other: configure Mesa, build vulkan-sim, then install Mesa
+$ meson setup mesa-vulkan-sim/build mesa-vulkan-sim --prefix=$PWD/mesa-vulkan-sim/lib \
+      -Dbuildtype=debug -Db_lundef=false -Dvulkan-drivers=swrast -Dgallium-drivers=swrast -Dplatforms=x11
+$ ninja -C mesa-vulkan-sim/build install   # the first pass may fail to link; that's expected
+$ make -C vulkan-sim -j$(nproc)
+$ ninja -C mesa-vulkan-sim/build install
+$ export VK_ICD_FILENAMES=$PWD/mesa-vulkan-sim/lib/share/vulkan/icd.d/lvp_icd.x86_64.json
 ```
 
-To pull the latest changes on both submodule branches:
-
-```bash
-$ git submodule update --remote
-```
-
-### Installation
-
-Install system packages:
-
-```bash
-$ sudo apt install -y build-essential git ninja-build meson libboost-all-dev xutils-dev bison zlib1g-dev flex libglu1-mesa-dev libxi-dev libxmu-dev libdrm-dev llvm libelf-dev libwayland-dev wayland-protocols libwayland-egl-backend-dev libxcb-glx0-dev libxcb-shm0-dev libx11-xcb-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxshmfence-dev libxxf86vm-dev libxrandr-dev libglm-dev libelf-dev
-```
-
-Set up the environment:
-
-```bash
-$ export CUDA_INSTALL_PATH=/usr/local/cuda
-$ source vulkan-sim/setup_environment
-```
-
-Build order matters — **build `vulkan-sim` first, then Mesa** (Mesa links against symbols from vulkan-sim):
-
-```bash
-$ cd mesa-vulkan-sim
-$ meson --prefix="${PWD}/lib" build/
-$ meson configure build/ -Dbuildtype=debug -D b_lundef=false
-$ ninja -C build/ install   # first pass may error; that's expected
-$ cd ../vulkan-sim/
-$ make -j$(nproc)
-$ cd ../mesa-vulkan-sim
-$ ninja -C build/ install
-```
-
-Register the Lavapipe ICD so applications load the vulkan-sim driver:
-
-```bash
-$ export VK_ICD_FILENAMES=$PWD/lib/share/vulkan/icd.d/lvp_icd.x86_64.json
-```
-
-Build the simulator inside Docker:
+### Building Accel-Sim (trace-driven experiments)
 
 ```bash
 $ docker run -it --rm -v $(pwd)/accel-sim-framework:/accel-sim/accel-sim-framework tgrogers/accel-sim_regress:Ubuntu-22.04-cuda-11.7
@@ -99,17 +150,26 @@ $ make -j -C ./gpu-simulator
 $ exit
 ```
 
-Copy `gpgpusim.config` and `config_turing_islip.icnt` from this folder into the Vulkan-Samples build folder before running.
+### Running
 
-### Running Vulkan-Samples
-
-Working samples on `dev-2.0` as of this update: `sponza`, `instancing`, `PBR`.
+Run apps from a directory that contains `gpgpusim.config` and `config_turing_islip.icnt` (both are in this repo).
+Apps need an X display. For a headless run use `xvfb-run`, with the screen size matching the app's resolution.
 
 ```bash
-$ VULKAN_APP=instancing ./build/linux/app/bin/Release/x86_64/vulkan_samples sample instancing
+$ GPGPUSIM_VERIFY=1 GPGPUSIM_FRAG_FEED=1 GPGPUSIM_EXIT_AFTER_PRESENTS=1 \
+  xvfb-run -a -s "-screen 0 640x360x24" vulkan_samples sample render_passes --width 640 --height 360
 ```
 
-The tracer writes `complete.traceg` in the working directory when the sample exits.
+| Variable | Effect |
+|---|---|
+| `GPGPUSIM_VERIFY=1` | Per-draw comparison against llvmpipe (`verify.csv`, `verify_vs.csv`, PPM images) |
+| `GPGPUSIM_FRAG_FEED=1` | Use llvmpipe's rasterized quads, sampler and blend stage (requires `VERIFY`) |
+| `GPGPUSIM_SKIP_RTT=1` | Simulate only draws that target the swapchain |
+| `GPGPUSIM_MAX_DRAWS=N` / `GPGPUSIM_SKIP_DRAWS=N` | Simulate a window of draws |
+| `GPGPUSIM_MAX_INSTANCES=N` | Cap instance counts (applies to both renderers, so the comparison stays exact) |
+| `GPGPUSIM_START_PRESENT=N` | Leave the first N frames (loading screens, splash) to llvmpipe |
+| `GPGPUSIM_EXIT_AFTER_PRESENTS=N` | Exit after N presents (default 2) |
+| `GPGPUSIM_LEGACY_PTX=1` | Use the old `nir_print` + Python NIR→PTX path |
 
 ### Experiment workflow (paper reproduction)
 
